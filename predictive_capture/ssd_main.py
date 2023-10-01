@@ -32,10 +32,7 @@ if __name__ == "__main__":
         # Show Detections
         show_detection_image(cv2_image)
 
-        logger.info("Result is " + str(detection_result["processing_time"]))
-        """
-        web_cam_detect = WebCamObjectDetection(model_file_path, labels_path, 640, 480)
-        web_cam_detect.web_cam_predict(threshold, model_type)
-        """        
+        print(detection_result)
+        logger.info("processing time is " + str(detection_result["processing_time"]))   
     except Exception as e:
         raise PreditiveCaptureMethodException(str(e))

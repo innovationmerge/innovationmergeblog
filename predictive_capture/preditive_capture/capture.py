@@ -1,7 +1,7 @@
 from innovationmerge import EdgeObjectDetectionTfLite
 from innovationmerge.configurations.constants import DETECTION_RESPONSE_BB
 from innovationmerge.src.utils.responses import load_labels, read_image
-from innovationmerge.src.utils.responses import draw_detections
+from innovationmerge.src.utils.responses import draw_detections, save_frame
 import cv2
 from threading import Thread
 from preditive_capture.exceptions import PreditiveCaptureMethodException
@@ -15,7 +15,6 @@ def detect_capture(model_path: str, labels_file_path: str, input_image_path: str
         return detection_result, cv2_image
     else:
         raise PreditiveCaptureMethodException("Only Edge models are supported currently")
-
 
 class VideoStream:
     """Camera object that controls video streaming from the Picamera"""
@@ -58,29 +57,50 @@ class VideoStream:
         self.stopped = True
 
 class WebCamObjectDetection():
-    def __init__(self, model_path, labels_path, imW, imH) -> None:
+    def __init__(self, compute, model_path, labels_path, output_path, imW, imH) -> None:
         # Initialize video stream
         self.videostream = VideoStream(resolution=(imW,imH), framerate=30).start()
-        self.detect_objects = EdgeObjectDetectionTfLite(model_path)
+        if compute == "edge":
+            self.detect_objects = EdgeObjectDetectionTfLite(model_path)
         self.labels = load_labels(labels_path)
+        self.output_path = output_path
 
     def web_cam_predict(self, threshold: float = 0.1, model_type: str = "ssd"):
         while True:
-            # Start timer (for calculating frame rate)
-            t1 = cv2.getTickCount()
-
             # Grab frame from video stream
             frame1 = self.videostream.read()
             # Acquire frame and resize to expected shape [1xHxWx3]
             frame = frame1.copy()
             
             detection_result = self.detect_objects.detect(cv2_image=frame, labels_list=self.labels, threshold=threshold, model_type=model_type)
-            print("detections", detection_result)
-            frame = draw_detections(detection_result, frame)
+            frame = draw_detections(detection_result, frame, model_type=model_type)
 
             # All the results have been drawn on the frame, so it's time to display it.
             cv2.imshow('Object detector', frame)
+            
+            # Press 'q' to quit
+            if cv2.waitKey(1) == ord('q'):
+                break
 
+        # Clean up
+        cv2.destroyAllWindows()
+        self.videostream.stop()
+
+    def web_cam_predict_save(self, threshold: float = 0.1, model_type: str = "ssd"):
+        while True:
+            # Grab frame from video stream
+            frame1 = self.videostream.read()
+            # Acquire frame and resize to expected shape [1xHxWx3]
+            frame = frame1.copy()
+            
+            detection_result = self.detect_objects.detect(cv2_image=frame, labels_list=self.labels, threshold=threshold, model_type=model_type)
+            frame = draw_detections(detection_result, frame, model_type=model_type)
+            if len(detection_result.get("detection")) > 0:
+                save_frame(frame, self.output_path, model_type=model_type)
+            
+            # All the results have been drawn on the frame, so it's time to display it.
+            cv2.imshow('Object detector', frame)
+            
             # Press 'q' to quit
             if cv2.waitKey(1) == ord('q'):
                 break
