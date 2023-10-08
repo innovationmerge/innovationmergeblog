@@ -7,9 +7,9 @@ readme = "README.md"
 packages = [{include = "preditive_capture"}]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.9,<3.11"
 python-json-logger = "^2.0.4"
-innovationmerge = "1.1.0"
+innovationmerge = {version = "1.1.2", extras = ["windows"]}
 
 
 [tool.poetry.dev-dependencies]
